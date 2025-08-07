@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mapp/coffee_model.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:io' show Platform;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -263,31 +264,33 @@ class _HomePageState extends State<HomePage> {
             SizedBox(
               height: MediaQuery.of(context).size.height,
               width: MediaQuery.of(context).size.width,
-              child: GoogleMap(
-                initialCameraPosition: const CameraPosition(
-                  target: LatLng(28.5301, 77.2517), // South Delhi
-                  zoom: 12.5,
-                ),
-                markers: Set.from(_allMarkers),
-                zoomGesturesEnabled: true,
-                zoomControlsEnabled: false,
-                padding: const EdgeInsets.only(top: 80.0, right: 20.0),
-                onMapCreated: (controller) {
-                  setState(() {
-                    _controller = controller;
-                    if (_allMarkers.isNotEmpty) {
-                      _moveCamera();
-                    }
-                  });
-                },
-                onTap: (position) {
-                  if (_controller != null && _allMarkers.isNotEmpty) {
-                    _controller!.hideMarkerInfoWindow(
-                      MarkerId(coffeeShops[_prevPage ?? 0].shopName),
-                    );
-                  }
-                },
-              ),
+              child: Platform.isAndroid || Platform.isIOS
+                  ? GoogleMap(
+                      initialCameraPosition: const CameraPosition(
+                        target: LatLng(28.5301, 77.2517), // South Delhi
+                        zoom: 12.5,
+                      ),
+                      markers: Set.from(_allMarkers),
+                      zoomGesturesEnabled: true,
+                      zoomControlsEnabled: false,
+                      padding: const EdgeInsets.only(top: 80.0, right: 20.0),
+                      onMapCreated: (controller) {
+                        setState(() {
+                          _controller = controller;
+                          if (_allMarkers.isNotEmpty) {
+                            _moveCamera();
+                          }
+                        });
+                      },
+                      onTap: (position) {
+                        if (_controller != null && _allMarkers.isNotEmpty) {
+                          _controller!.hideMarkerInfoWindow(
+                            MarkerId(coffeeShops[_prevPage ?? 0].shopName),
+                          );
+                        }
+                      },
+                    )
+                  : const Center(child: Text('Map not supported on web')),
             ),
             Positioned(
               top: 10.0,
@@ -342,9 +345,8 @@ class _HomePageState extends State<HomePage> {
                           controller: _pageController,
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemCount: coffeeShops.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return _coffeeShopList(index);
-                          },
+                          itemBuilder: (context, index) =>
+                              _coffeeShopList(index),
                         ),
                 ),
               ),
@@ -353,12 +355,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    _pageController?.dispose();
-    super.dispose();
   }
 }
